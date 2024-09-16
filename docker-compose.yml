@@ -1,0 +1,54 @@
+version: "3.8"
+services:
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fastapi_app
+    depends_on:
+      - redis
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql://artisusxiren:Newpass@postgres/db
+      - REDIS_HOST=redis
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: celery_worker
+    depends_on:
+      - redis
+      - fastapi
+      - postgres
+    command: celery -A celery_back.celery_app worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://artisusxiren:Newpass@postgres/db
+      - REDIS_HOST=redis
+    volumes:
+      - .:/app
+
+  redis:
+    image: redis:6.0-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: postgres:13-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: artisusxiren
+      POSTGRES_PASSWORD: Newpass
+      POSTGRES_DB: db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
